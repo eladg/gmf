@@ -21,7 +21,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/3d0c/gmf"
+	"github.com/chenhengjie123/gmf"
 )
 
 var fileCount int = 0
@@ -37,48 +37,57 @@ func main() {
 
 	os.MkdirAll("./tmp", 0755)
 
+	// 基于文件创建输入上下文
 	inputCtx, err := gmf.NewInputCtx(srcFileName)
 	if err != nil {
 		log.Fatalf("Error creating context - %s\n", err)
 	}
+	// 函数执行完毕后，释放上下文
 	defer inputCtx.Free()
 
+	// 获取视频流
 	srcVideoStream, err := inputCtx.GetBestStream(gmf.AVMEDIA_TYPE_VIDEO)
 	if err != nil {
 		log.Printf("No video stream found in '%s'\n", srcFileName)
 		return
 	}
 
+	// 获取编码器
 	codec, err := gmf.FindEncoder(gmf.AV_CODEC_ID_RAWVIDEO)
 	if err != nil {
 		log.Fatalf("%s\n", err)
 	}
 
-	cc := gmf.NewCodecCtx(codec)
-	defer gmf.Release(cc)
+	// 创建编码器上下文
+	codecCtx := gmf.NewCodecCtx(codec)
+	defer gmf.Release(codecCtx)
 
-	cc.SetTimeBase(gmf.AVR{Num: 1, Den: 1})
+	codecCtx.SetTimeBase(gmf.AVR{Num: 1, Den: 1})
 
-	cc.SetPixFmt(gmf.AV_PIX_FMT_RGBA).SetWidth(srcVideoStream.CodecCtx().Width()).SetHeight(srcVideoStream.CodecCtx().Height())
+	// 设置编码器上下文的参数，包括颜色格式、宽、高。
+	codecCtx.SetPixFmt(gmf.AV_PIX_FMT_RGBA).SetWidth(srcVideoStream.CodecCtx().Width()).SetHeight(srcVideoStream.CodecCtx().Height())
+	// 如果是实验性的编码器，设置兼容性为实验性模式
 	if codec.IsExperimental() {
-		cc.SetStrictCompliance(gmf.FF_COMPLIANCE_EXPERIMENTAL)
+		codecCtx.SetStrictCompliance(gmf.FF_COMPLIANCE_EXPERIMENTAL)
 	}
 
-	if err := cc.Open(nil); err != nil {
+	// 打开编码器·
+	if err := codecCtx.Open(nil); err != nil {
 		log.Fatal(err)
 	}
-	defer cc.Free()
+	defer codecCtx.Free()
 
-	ist, err := inputCtx.GetStream(srcVideoStream.Index())
+	// 从第一帧开始获取视频流
+	inputStream, err := inputCtx.GetStream(srcVideoStream.Index())
 	if err != nil {
 		log.Fatalf("Error getting stream - %s\n", err)
 	}
-	defer ist.Free()
+	defer inputStream.Free()
 
 	// convert source pix_fmt into AV_PIX_FMT_RGBA
 	// which is set up by codec context above
-	icc := srcVideoStream.CodecCtx()
-	if swsctx, err = gmf.NewSwsCtx(icc.Width(), icc.Height(), icc.PixFmt(), cc.Width(), cc.Height(), cc.PixFmt(), gmf.SWS_BICUBIC); err != nil {
+	inputCodecCtx := srcVideoStream.CodecCtx()
+	if swsctx, err = gmf.NewSwsCtx(inputCodecCtx.Width(), inputCodecCtx.Height(), inputCodecCtx.PixFmt(), codecCtx.Width(), codecCtx.Height(), codecCtx.PixFmt(), gmf.SWS_BICUBIC); err != nil {
 		panic(err)
 	}
 	defer swsctx.Free()
@@ -108,11 +117,12 @@ func main() {
 			drain = 0
 		}
 
+		// TODO: 待看明白
 		if pkt != nil && pkt.StreamIndex() != srcVideoStream.Index() {
 			continue
 		}
 
-		frames, err = ist.CodecCtx().Decode(pkt)
+		frames, err = inputStream.CodecCtx().Decode(pkt)
 		if err != nil {
 			log.Printf("Fatal error during decoding - %s\n", err)
 			break
@@ -129,7 +139,8 @@ func main() {
 			panic(err)
 		}
 
-		encode(cc, frames, drain)
+		// 对视频数据进行重编码并保存到文件
+		encode(codecCtx, frames, drain)
 
 		for i, _ := range frames {
 			frames[i].Free()

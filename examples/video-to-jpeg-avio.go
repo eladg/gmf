@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	. "github.com/3d0c/gmf"
+	. "github.com/chenhengjie123/gmf"
 )
 
 var (

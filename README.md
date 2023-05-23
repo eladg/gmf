@@ -11,9 +11,8 @@ There is one required option, which is disabled by default, you should turn on: 
 E.g.:
 
 ```sh
-./configure --prefix=/usr/local/ffmpeg --enable-shared
-make
-make install
+//./configure --prefix=/usr/local/ffmpeg --enable-shared
+./configure --prefix=/usr/local/ffmpeg --enable-shared --enable-libx264 --enable-gpl && make && make install
 ```
 
 Add pkgconfig path:
@@ -34,7 +33,7 @@ It should print valid path to the avformat library.
 Now, just run
 
 ```sh
-go get github.com/3d0c/gmf
+go get github.com/chenhengjie123/gmf
 ```
 
 ##### Other methods

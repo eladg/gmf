@@ -3,7 +3,7 @@ package gmf_test
 import (
 	"errors"
 	"fmt"
-	"github.com/3d0c/gmf"
+	"github.com/chenhengjie123/gmf"
 	"io"
 	"log"
 	"os"

@@ -3,7 +3,7 @@ package gmf_test
 import (
 	"testing"
 
-	"github.com/3d0c/gmf"
+	"github.com/chenhengjie123/gmf"
 	"github.com/stretchr/testify/require"
 )
 

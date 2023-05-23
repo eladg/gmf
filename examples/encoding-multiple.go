@@ -14,7 +14,7 @@ import (
 	"log"
 	"sync"
 
-	. "github.com/3d0c/gmf"
+	. "github.com/chenhengjie123/gmf"
 )
 
 func fatal(err error) {

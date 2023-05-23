@@ -18,7 +18,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/3d0c/gmf"
+	"github.com/chenhengjie123/gmf"
 )
 
 var pts int64 = 0
@@ -88,14 +88,14 @@ func initOst(name string, oc *gmf.FmtCtx, ist *gmf.Stream) (*gmf.Stream, error) 
 
 func main() {
 	var (
-		src     string
-		dst     string
-		ost     *gmf.Stream
-		pkt     *gmf.Packet
-		frame   *gmf.Frame
-		swsCtx  *gmf.SwsCtx
-		ret     int
-		sources []string = make([]string, 0)
+		src          string
+		dst          string
+		outputStream *gmf.Stream
+		pkt          *gmf.Packet
+		frame        *gmf.Frame
+		swsCtx       *gmf.SwsCtx
+		ret          int
+		sources      []string = make([]string, 0)
 	)
 
 	flag.StringVar(&src, "src", "./tmp", "source images folder")
@@ -122,13 +122,14 @@ func main() {
 		log.Fatalf("Not enough source files\n")
 	}
 
-	octx, err := gmf.NewOutputCtx(dst)
+	outputCtx, err := gmf.NewOutputCtx(dst)
 	if err != nil {
 		log.Fatalf("Error creating output context - %s\n", err)
 	}
-	defer octx.Free()
+	defer outputCtx.Free()
 
 	for _, source := range sources {
+		// 逐个图片读取
 		log.Printf("Loading %s\n", source)
 
 		ictx, err := gmf.NewInputCtx(source)
@@ -136,24 +137,24 @@ func main() {
 			log.Fatalf("Error creating input context - %s\n", err)
 		}
 
-		ist, err := ictx.GetBestStream(gmf.AVMEDIA_TYPE_VIDEO)
+		inputStream, err := ictx.GetBestStream(gmf.AVMEDIA_TYPE_VIDEO)
 		if err != nil {
 			log.Fatalf("Error getting source stream - %s\n", err)
 		}
 
-		if ost == nil {
-			if ost, err = initOst("libx264", octx, ist); err != nil {
+		if outputStream == nil {
+			if outputStream, err = initOst("libx264", outputCtx, inputStream); err != nil {
 				log.Fatalf("Error init output stream - %s\n", err)
 			}
-			if err = octx.WriteHeader(); err != nil {
+			if err = outputCtx.WriteHeader(); err != nil {
 				log.Fatalf("%s\n", err)
 			}
 		}
 
 		if swsCtx == nil {
-			icc := ist.CodecCtx()
-			occ := ost.CodecCtx()
-			if swsCtx, err = gmf.NewSwsCtx(icc.Width(), icc.Height(), icc.PixFmt(), occ.Width(), occ.Height(), occ.PixFmt(), gmf.SWS_BICUBIC); err != nil {
+			inputCodeCtx := inputStream.CodecCtx()
+			occ := outputStream.CodecCtx()
+			if swsCtx, err = gmf.NewSwsCtx(inputCodeCtx.Width(), inputCodeCtx.Height(), inputCodeCtx.PixFmt(), occ.Width(), occ.Height(), occ.PixFmt(), gmf.SWS_BICUBIC); err != nil {
 				panic(err)
 			}
 			defer swsCtx.Free()
@@ -163,7 +164,7 @@ func main() {
 			log.Fatalf("Error getting packet - %s", err)
 		}
 
-		frame, ret = ist.CodecCtx().Decode2(pkt)
+		frame, ret = inputStream.CodecCtx().Decode2(pkt)
 		if ret < 0 {
 			log.Fatalf("Unexpected error - %s\n", gmf.AvError(ret))
 		}
@@ -173,33 +174,34 @@ func main() {
 			log.Fatalf("Error scaling - %s\n", err)
 		}
 
-		encode(octx, ost, dstFrames[0], -1)
+		encode(outputCtx, outputStream, dstFrames[0], -1)
 
 		pkt.Free()
 		frame.Free()
 		dstFrames[0].Free()
 
-		ist.CodecCtx().Free()
-		ist.Free()
+		inputStream.CodecCtx().Free()
+		inputStream.Free()
 		ictx.Free()
 	}
 
-	encode(octx, ost, nil, 1)
+	// 每一帧数据写入完毕，写入尾部
+	encode(outputCtx, outputStream, nil, 1)
 
-	ost.CodecCtx().Free()
-	ost.Free()
+	outputStream.CodecCtx().Free()
+	outputStream.Free()
 
-	octx.WriteTrailer()
+	outputCtx.WriteTrailer()
 }
 
-func encode(octx *gmf.FmtCtx, ost *gmf.Stream, frame *gmf.Frame, drain int) {
+func encode(outputCtx *gmf.FmtCtx, outputStream *gmf.Stream, frame *gmf.Frame, drain int) {
 	if frame != nil {
 		frame.SetPts(pts)
 	}
 
 	pts += 1
 
-	packets, err := ost.CodecCtx().Encode([]*gmf.Frame{frame}, drain)
+	packets, err := outputStream.CodecCtx().Encode([]*gmf.Frame{frame}, drain)
 	if err != nil {
 		log.Fatalf("Error encoding - %s\n", err)
 	}
@@ -208,10 +210,10 @@ func encode(octx *gmf.FmtCtx, ost *gmf.Stream, frame *gmf.Frame, drain int) {
 	}
 
 	for _, packet := range packets {
-		packet.SetPts(gmf.RescaleQ(packet.Pts(), ost.CodecCtx().TimeBase(), ost.TimeBase()))
-		packet.SetDts(gmf.RescaleQ(packet.Dts(), ost.CodecCtx().TimeBase(), ost.TimeBase()))
+		packet.SetPts(gmf.RescaleQ(packet.Pts(), outputStream.CodecCtx().TimeBase(), outputStream.TimeBase()))
+		packet.SetDts(gmf.RescaleQ(packet.Dts(), outputStream.CodecCtx().TimeBase(), outputStream.TimeBase()))
 
-		if err = octx.WritePacket(packet); err != nil {
+		if err = outputCtx.WritePacket(packet); err != nil {
 			log.Fatalf("Error writing packet - %s\n", err)
 		}
 

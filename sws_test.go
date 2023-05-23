@@ -4,7 +4,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/3d0c/gmf"
+	"github.com/chenhengjie123/gmf"
 )
 
 // @todo export rescaled frame as jpeg and compare dimension.

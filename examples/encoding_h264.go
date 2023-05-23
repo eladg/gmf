@@ -35,7 +35,7 @@ import (
 	"fmt"
 	"log"
 
-	. "github.com/3d0c/gmf"
+	. "github.com/chenhengjie123/gmf"
 )
 
 func fatal(err error) {

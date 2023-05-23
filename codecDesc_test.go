@@ -1,7 +1,7 @@
 package gmf_test
 
 import (
-	"github.com/3d0c/gmf"
+	"github.com/chenhengjie123/gmf"
 	"log"
 	"testing"
 )

@@ -1,4 +1,4 @@
-module github.com/3d0c/gmf
+module github.com/chenhengjie123/gmf
 
 go 1.12
 
