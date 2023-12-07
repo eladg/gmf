@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/chenhengjie123/gmf"
+	"github.com/eladg/gmf"
 )
 
 type arrayFlags []string

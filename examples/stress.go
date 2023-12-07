@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/chenhengjie123/gmf"
+	"github.com/eladg/gmf"
 )
 
 const (

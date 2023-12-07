@@ -18,7 +18,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/chenhengjie123/gmf"
+	"github.com/eladg/gmf"
 )
 
 var pts int64 = 0

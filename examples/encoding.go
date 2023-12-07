@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	. "github.com/chenhengjie123/gmf"
+	. "github.com/eladg/gmf"
 )
 
 func fatal(err error) {

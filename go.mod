@@ -1,5 +1,5 @@
-module github.com/chenhengjie123/gmf
+module github.com/eladg/gmf
 
-go 1.12
+go 1.21
 
 require github.com/stretchr/testify v1.7.1
